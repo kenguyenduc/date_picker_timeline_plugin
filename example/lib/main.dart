@@ -12,6 +12,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  DateTime _selectedValue = DateTime.now();
+
   @override
   void initState() {
     super.initState();
@@ -19,7 +21,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    DateTime _selectedValue = DateTime.now();
     return MaterialApp(
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
@@ -56,7 +57,6 @@ class _MyAppState extends State<MyApp> {
                   initialDate: DateTime.now(),
                   firstDate: DateTime(2020),
                   lastDate: DateTime(2022),
-                  locale: Locale('vi'),
                 );
               },
               child: Text('test'),

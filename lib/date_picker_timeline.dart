@@ -14,18 +14,20 @@ class DatePickerTimeline extends StatefulWidget {
     required this.firstDate,
     required this.lastDate,
     this.onDateChange,
-  })   : assert(!lastDate.isBefore(firstDate),
-            'lastDate $lastDate must be on or after firstDate $firstDate.'),
+  })
+      : assert(!lastDate.isBefore(firstDate),
+  'lastDate $lastDate must be on or after firstDate $firstDate.'),
         assert(!initialDate.isBefore(firstDate),
-            'initialDate $initialDate must be on or after firstDate $firstDate.'),
+        'initialDate $initialDate must be on or after firstDate $firstDate.'),
         assert(!initialDate.isAfter(lastDate),
-            'initialDate $initialDate must be on or before lastDate $lastDate.'),
+        'initialDate $initialDate must be on or before lastDate $lastDate.'),
         super(key: key);
 
   final BuildContext context;
   final DateTime initialDate;
   final DateTime firstDate;
   final DateTime lastDate;
+
   /// Callback function for when a different date is selected
   final DateChangeListener? onDateChange;
 
@@ -41,6 +43,7 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
   static final DateTime _dateTimeNow = DateTime.now();
   late DateTime _currentDisplayedMonthDate;
   DateTime? _currentDate;
+  bool _isFirstSelectedInitDate = true;
 
   @override
   void initState() {
@@ -64,7 +67,8 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
     int _lastYear = widget.lastDate.year;
     //Cập nhật tháng những năm trước
     for (int i = _firstYear; i < _lastYear; i++) {
-      for (int j = 1; j <= 12; j++) _dropdownItemsMonth.add('$j, $i');
+      for (int j = 1; j <= 12; j++)
+        _dropdownItemsMonth.add('$j, $i');
     }
     //Thêm tháng đến tháng hiện tại
     for (int i = 1; i <= widget.lastDate.month; i++) {
@@ -121,14 +125,14 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
         value: _dropdownValueMonth,
         iconSize: 20,
         icon:
-            Icon(Icons.keyboard_arrow_down_outlined, color: Color(0xFF303030)),
+        Icon(Icons.keyboard_arrow_down_outlined, color: Color(0xFF303030)),
         elevation: 16,
         dropdownColor: Colors.white,
         style: _textStyle,
         underline: SizedBox(),
         onChanged: _handleDropdownMonthsChanged,
         items:
-            _dropdownItemsMonth.map<DropdownMenuItem<String>>((String value) {
+        _dropdownItemsMonth.map<DropdownMenuItem<String>>((String value) {
           return DropdownMenuItem<String>(
             value: value,
             child: Text(
@@ -149,7 +153,7 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
 
   Widget _buildDaysOnWeek() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 40),
       child: PageView.builder(
         key: _pageViewKey,
         controller: _pageController,
@@ -166,17 +170,21 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
     List<Widget> _widgets = <Widget>[];
     for (int i = 0; i < 7; i++) {
       _widgets.add(DateWidget(
-        date: _dateTimeNow,
+        date: _dateTimeNow.add(Duration(days: i)),
         count: i + 1,
         onDateSelected: (selectedDate) {
           if (widget.onDateChange != null) {
             widget.onDateChange!(selectedDate);
           }
           setState(() {
+            _isFirstSelectedInitDate = false;
             _currentDate = selectedDate;
           });
         },
-        isSelected: DateUtils.isSameDay(_currentDate,_dateTimeNow),
+        isSelected: DateUtils.isSameDay(
+            _currentDate, _dateTimeNow.add(Duration(days: i))) ||
+            (_isFirstSelectedInitDate && DateUtils.isSameDay(
+                _dateTimeNow, _dateTimeNow.add(Duration(days: i)))),
       ));
     }
     return Row(
@@ -194,8 +202,10 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
         child: Material(
           color: Colors.transparent,
           child: IconButton(
-            icon: const Icon(Icons.arrow_forward_ios,
-                color: Color(0xFF303030), size: 20),
+            icon: const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF303030),
+            ),
             onPressed: _handleNextWeek,
           ),
         ),
@@ -212,9 +222,8 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
           color: Colors.transparent,
           child: IconButton(
             icon: const Icon(
-              Icons.arrow_back_ios,
+              Icons.chevron_left,
               color: Color(0xFF303030),
-              size: 20,
             ),
             onPressed: _handlePreviousWeek,
           ),

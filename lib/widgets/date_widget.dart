@@ -40,7 +40,6 @@ class DateWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Container(
-            // width: 28,
             height: 36,
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
@@ -52,7 +51,7 @@ class DateWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  'T ' + _date.substring(_date.length - 1),
+                  _date.replaceAll('H',''),
                   style: TextStyle(
                     color: isSelected ? Colors.white : const Color(0xFF858585),
                     fontSize: 9,
