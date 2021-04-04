@@ -25,7 +25,6 @@ class DateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String _date = DateFormat('E', 'vi').format(date).toUpperCase();
     return GestureDetector(
       onTap: () {
         // Check if onDateSelected is not null
@@ -51,7 +50,7 @@ class DateWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  _date.replaceAll('H',''),
+                  DateFormat('E', 'vi').format(date).replaceAll('h',''),
                   style: TextStyle(
                     color: isSelected ? Colors.white : const Color(0xFF858585),
                     fontSize: 9,

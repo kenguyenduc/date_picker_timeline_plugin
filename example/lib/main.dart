@@ -1,6 +1,8 @@
 import 'package:date_picker_timeline_plugin/date_picker_timeline.dart';
+import 'package:date_picker_timeline_plugin/date_picker_timeline_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(MyApp());
@@ -19,6 +21,13 @@ class _MyAppState extends State<MyApp> {
     super.initState();
   }
 
+  DateTime getDateByWeekNumber({int? week, int? year, bool? start}) {
+    DateTime date;
+    var days = ((week! - 1) * 7) + (start! ? -1 : 5);
+    date = DateTime.utc(2021, 1, days);
+    return date;
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -31,6 +40,7 @@ class _MyAppState extends State<MyApp> {
         const Locale('en'),
         const Locale('vi'),
       ],
+      locale: const Locale('vi'),
       home: Scaffold(
         backgroundColor: Color(0xFFE5E5E5),
         appBar: AppBar(
@@ -52,12 +62,24 @@ class _MyAppState extends State<MyApp> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2022),
-                );
+                DateTime date =
+                    getDateByWeekNumber(week: 12, year: 2021, start: true);
+                DateFormat dateFormat = DateFormat("yyyy-MM-dd HH:mm:ss");
+                print(dateFormat.format(date));
+
+                var dayOfWeek = 1;
+                DateTime now = DateTime.now();
+                var lastMonday = now
+                    .subtract(Duration(days: now.weekday - dayOfWeek))
+                    .toIso8601String();
+                print(lastMonday);
+                print(now.weekday.toString() + 'weekday');
+                // DateUtils.firstDayOffset(2021, 3, Locale('vi'));
+                int test1 = Utils.firstDayOffset(2021, 3);
+                print(test1);
+                int test2 = Utils.dateDelta(now,DateTime(2021,4,1));
+                print(test2/7);
+
               },
               child: Text('test'),
             ),
