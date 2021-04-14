@@ -162,8 +162,8 @@ class Utils {
 
   /// Lấy ngày thứ 2 đầu tiên của tuần hiện tại
   static DateTime getMondayOnCurrentWeek(DateTime date) {
-    int dayOfWeek = 1;
-    return date.subtract(Duration(days: date.weekday - dayOfWeek));
+    const int _dayOfWeek = 1;
+    return date.subtract(Duration(days: date.weekday - _dayOfWeek));
   }
 
   /// Lấy ngày đầu tiên của tháng
@@ -173,8 +173,8 @@ class Utils {
 
   /// Lấy ngày cuối của tháng
   static DateTime getLastDateOfMonth(DateTime date) {
-    int _year = date.year;
-    int _month = date.month;
+    final int _year = date.year;
+    final int _month = date.month;
     return DateTime(_year, _month, getDaysInMonth(_year, _month));
   }
 

@@ -53,7 +53,8 @@ class _MyAppState extends State<MyApp> {
               context: context,
               initialDate: DateTime.now(),
               lastDate: DateTime(2022),
-              firstDate: DateTime(2019),counts: [1,2,3,4,5,6,7],
+              firstDate: DateTime(2019),
+              counts: [1, 2, 3, 4, 5, 6, 7],
               onDateChange: (DateTime selectedDate) {
                 setState(() {
                   _selectedValue = selectedDate;
@@ -89,6 +90,14 @@ class _MyAppState extends State<MyApp> {
             ),
             const SizedBox(height: 32),
             Text('You selected: \n $_selectedValue'),
+            DateTimeRangeSelect(
+              context: context,
+              selectedFirstDate: DateTime.now(),
+              selectedLastDate: DateTime.now(),
+              focusedMonth: DateTime.now(),
+              onFocusedDateChange: (date){
+              },
+            ),
           ],
         ),
       ),
