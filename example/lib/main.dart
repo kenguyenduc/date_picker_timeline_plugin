@@ -15,6 +15,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   DateTime _selectedValue = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
 
   @override
   void initState() {
@@ -52,11 +53,15 @@ class _MyAppState extends State<MyApp> {
               context: context,
               initialDate: DateTime.now(),
               lastDate: DateTime(2022),
-              firstDate: DateTime(2019),
+              firstDate: DateTime(2019),counts: [1,2,3,4,5,6,7],
               onDateChange: (DateTime selectedDate) {
                 setState(() {
                   _selectedValue = selectedDate;
                 });
+              },
+              focusedDay: _focusedDay,
+              onFocusedDateChange: (DateTime date) {
+                _focusedDay = date;
               },
             ),
             const SizedBox(height: 16),
@@ -77,9 +82,8 @@ class _MyAppState extends State<MyApp> {
                 // DateUtils.firstDayOffset(2021, 3, Locale('vi'));
                 int test1 = Utils.firstDayOffset(2021, 3);
                 print(test1);
-                int test2 = Utils.dateDelta(now,DateTime(2021,4,1));
-                print(test2/7);
-
+                int test2 = Utils.dateDelta(now, DateTime(2021, 4, 1));
+                print(test2 / 7);
               },
               child: Text('test'),
             ),

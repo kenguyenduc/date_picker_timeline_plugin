@@ -1,10 +1,8 @@
-import 'package:date_picker_timeline_plugin/gestures/tap.dart';
 import 'package:date_picker_timeline_plugin/utils.dart';
-import 'package:date_picker_timeline_plugin/widgets/dashed_line_horizontal.dart';
 import 'package:flutter/material.dart';
+import 'gestures/tap.dart';
+import 'widgets/dashed_line_horizontal.dart';
 import 'widgets/date_widget.dart';
-
-const Duration _kMonthScrollDuration = Duration(milliseconds: 200);
 
 class DatePickerTimeline extends StatefulWidget {
   DatePickerTimeline({
@@ -14,6 +12,9 @@ class DatePickerTimeline extends StatefulWidget {
     required this.firstDate,
     required this.lastDate,
     this.onDateChange,
+    required this.onFocusedDateChange,
+    required this.focusedDay,
+    this.counts,
   })  : assert(!lastDate.isBefore(firstDate),
             'lastDate $lastDate must be on or after firstDate $firstDate.'),
         assert(!initialDate.isBefore(firstDate),
@@ -33,8 +34,17 @@ class DatePickerTimeline extends StatefulWidget {
   /// ngày cuối cùng
   final DateTime lastDate;
 
+  /// Ngày trong tuần đang được hiển thị
+  final DateTime focusedDay;
+
   /// Callback function for when a different date is selected
   final DateChangeListener? onDateChange;
+
+  ///ngày trong tuần hiển thị thay được thay đổi
+  final DateChangeListener onFocusedDateChange;
+
+  /// Count lịch hẹn các ngày trong tuần
+  final List<int>? counts;
 
   @override
   _DatePickerTimelineState createState() => _DatePickerTimelineState();
@@ -43,24 +53,22 @@ class DatePickerTimeline extends StatefulWidget {
 class _DatePickerTimelineState extends State<DatePickerTimeline> {
   static final DateTime _dateTimeNow = DateTime.now();
 
-  late PageController _pageController;
-  final GlobalKey _pageViewKey = GlobalKey();
-  List<String> _dropdownItemsMonth = <String>[];
-  String? _dropdownValueMonth;
-  late DateTime _currentDisplayedMonthDate;
-  DateTime? _selectedDate;
-  bool _isFirstSelectedInitDate = true;
+  /// Items dropdown button select month
+  final List<String> _dropdownItemsMonth = <String>[];
+  late String? _dropdownValueMonth;
+
+  ///Ngày được chọn
+  late DateTime _selectedDate;
+
+  /// Ngày trong tuần đang được hiển thị
   late DateTime _focusedDay;
 
   @override
   void initState() {
     super.initState();
-    _currentDisplayedMonthDate = _dateTimeNow;
-    _pageController = PageController(
-        initialPage: Utils.monthDelta(widget.firstDate, _dateTimeNow));
-    _pageController.addListener(_onPageScroll);
     _loadListMonthSelect();
-    _focusedDay = widget.initialDate;
+    _selectedDate = widget.initialDate;
+    _focusedDay = widget.focusedDay;
   }
 
   @override
@@ -71,11 +79,13 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
   /// Handle update list item dropdown select month
   void _loadListMonthSelect() {
     _dropdownValueMonth = '${_dateTimeNow.month}, ${_dateTimeNow.year}';
-    int _firstYear = widget.firstDate.year;
-    int _lastYear = widget.lastDate.year;
+    final int _firstYear = widget.firstDate.year;
+    final int _lastYear = widget.lastDate.year;
     //Cập nhật tháng những năm trước
     for (int i = _firstYear; i < _lastYear; i++) {
-      for (int j = 1; j <= 12; j++) _dropdownItemsMonth.add('$j, $i');
+      for (int j = 1; j <= 12; j++) {
+        _dropdownItemsMonth.add('$j, $i');
+      }
     }
     //Thêm tháng đến tháng hiện tại
     for (int i = 1; i <= widget.lastDate.month; i++) {
@@ -83,12 +93,11 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
     }
   }
 
-  void _onPageScroll() {}
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      width: MediaQuery.of(context).size.width,
+      decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
       ),
@@ -97,9 +106,8 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
         children: <Widget>[
           const SizedBox(height: 8),
           _buildDropdownSelectMoth(),
-          const SizedBox(height: 6),
-          DashedLineHorizontal(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          const DashedLineHorizontal(color: Color(0xFFEEEEEE)),
           SizedBox(
             height: 80,
             child: Stack(
@@ -131,12 +139,15 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
       child: DropdownButton<String>(
         value: _dropdownValueMonth,
         iconSize: 20,
-        icon:
-            Icon(Icons.keyboard_arrow_down_outlined, color: Color(0xFF303030)),
+        icon: Icon(
+          Icons.keyboard_arrow_down,
+          color: const Color(0xFF303030),
+        ),
         elevation: 16,
         dropdownColor: Colors.white,
         style: _textStyle,
-        underline: SizedBox(),
+        isDense: false,
+        underline: const SizedBox.shrink(),
         onChanged: _handleDropdownMonthsChanged,
         items:
             _dropdownItemsMonth.map<DropdownMenuItem<String>>((String value) {
@@ -155,53 +166,40 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
   void _handleDropdownMonthsChanged(String? value) {
     setState(() {
       _dropdownValueMonth = value;
+      final List<String> _times = _dropdownValueMonth!.split(', ');
+      _focusedDay = DateTime(int.parse(_times[1]), int.parse(_times[0]), 1);
     });
   }
 
-  // Widget _buildDaysOnWeek() {
-  //   List<Widget> _widgets = <Widget>[];
-  //   for (int i = 0; i < 7; i++) {
-  //     _widgets.add(_buildItem());
-  //   }
-  //   return Row(
-  //     children: _widgets,
-  //   );
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(horizontal: 40),
-  //     child: PageView.builder(
-  //       key: _pageViewKey,
-  //       controller: _pageController,
-  //       onPageChanged: _handleWeekPageChanged,
-  //       itemCount: Utils.monthDelta(widget.firstDate, widget.lastDate) + 1,
-  //       itemBuilder: (BuildContext context, int index) => _buildItem(),
-  //     ),
-  //   );
-  // }
-
-  void _handleWeekPageChanged(int weekPage) {}
-  bool _isOnHorizontalDragStart = false;
+  DateTime _fromDropdownValueToDate(String value) {
+    final List<String> _monthYear = value.split(', ');
+    return DateTime(int.parse(_monthYear[1]), int.parse(_monthYear[0]));
+  }
 
   Widget _buildDaysOnWeek() {
-    List<Widget> _widgets = <Widget>[];
-    DateTime _monday = Utils.getMondayOnCurrentWeek(_focusedDay);
+    final List<Widget> _widgets = <Widget>[];
+    final DateTime _monday = Utils.getMondayOnCurrentWeek(_focusedDay);
     for (int i = 0; i < 7; i++) {
+      final DateTime _date = _monday.add(Duration(days: i));
       _widgets.add(DateWidget(
-        date: _monday.add(Duration(days: i)),
-        count: i + 1,
-        onDateSelected: (selectedDate) {
+        date: _date,
+        count: widget.counts != null ? widget.counts![i] : 0,
+        isCurrentMonth: Utils.isSameMonth(
+            _date, _fromDropdownValueToDate(_dropdownValueMonth!)),
+        onDateSelected: (DateTime selectedDate) {
           if (widget.onDateChange != null) {
-            widget.onDateChange!(selectedDate);
+            widget.onDateChange!(Utils.dateOnly(selectedDate));
           }
           setState(() {
-            _isFirstSelectedInitDate = false;
             _selectedDate = selectedDate;
+            _focusedDay = _selectedDate;
+            _dropdownValueMonth = '${_focusedDay.month}, ${_focusedDay.year}';
           });
         },
         isSelected: Utils.isSameDay(
-                _selectedDate, _focusedDay.add(Duration(days: i))) ||
-            (_isFirstSelectedInitDate &&
-                Utils.isSameDay(
-                    _focusedDay, _dateTimeNow.add(Duration(days: i)))),
+          _selectedDate,
+          _date,
+        ),
       ));
     }
     return Padding(
@@ -216,10 +214,12 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
             _handlePreviousWeek();
           }
         },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: _widgets,
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: _widgets,
+          ),
         ),
       ),
     );
@@ -233,11 +233,13 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
         child: Material(
           color: Colors.transparent,
           child: IconButton(
-            icon: const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF303030),
+            icon: Icon(
+              Icons.keyboard_arrow_right_outlined,
+              color: const Color(0xFF858585),
             ),
-            onPressed: _handleNextWeek,
+            onPressed: () {
+              _handleNextWeek();
+            },
           ),
         ),
       ),
@@ -252,9 +254,9 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
         child: Material(
           color: Colors.transparent,
           child: IconButton(
-            icon: const Icon(
-              Icons.chevron_left,
-              color: Color(0xFF303030),
+            icon: Icon(
+              Icons.keyboard_arrow_left_outlined,
+              color: const Color(0xFF858585),
             ),
             onPressed: _handlePreviousWeek,
           ),
@@ -266,10 +268,10 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
   ///Load page view next month
   void _handleNextWeek() {
     if (!_isDisplayingLastMonth) {
-      // _pageController.nextPage(
-      //     duration: _kMonthScrollDuration, curve: Curves.ease);
       setState(() {
-        _focusedDay = _focusedDay.add(Duration(days: 7));
+        _focusedDay = _focusedDay.add(const Duration(days: 7));
+        widget.onFocusedDateChange(Utils.dateOnly(_focusedDay));
+        _dropdownValueMonth = '${_focusedDay.month}, ${_focusedDay.year}';
       });
     }
   }
@@ -277,23 +279,23 @@ class _DatePickerTimelineState extends State<DatePickerTimeline> {
   ///Load page view previous month
   void _handlePreviousWeek() {
     if (!_isDisplayingFirstMonth) {
-      // _pageController.previousPage(
-      //     duration: _kMonthScrollDuration, curve: Curves.ease);
       setState(() {
-        _focusedDay = _focusedDay.subtract(Duration(days: 7));
+        _focusedDay = _focusedDay.subtract(const Duration(days: 7));
+        widget.onFocusedDateChange(Utils.dateOnly(_focusedDay));
+        _dropdownValueMonth = '${_focusedDay.month}, ${_focusedDay.year}';
       });
     }
   }
 
   /// True if the earliest allowable month is displayed.
   bool get _isDisplayingFirstMonth {
-    return !_currentDisplayedMonthDate
+    return !_focusedDay
         .isAfter(DateTime(widget.firstDate.year, widget.firstDate.month));
   }
 
   /// True if the latest allowable month is displayed.
   bool get _isDisplayingLastMonth {
-    return !_currentDisplayedMonthDate
+    return !_focusedDay
         .isBefore(DateTime(widget.lastDate.year, widget.lastDate.month));
   }
 }
