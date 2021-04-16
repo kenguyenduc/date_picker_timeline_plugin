@@ -16,6 +16,7 @@ class _MyAppState extends State<MyApp> {
   DateTime _selectedValue = DateTime.now();
   DateTime _focusedDay = DateTime.now();
   DateTimeRange? dateTimeRange;
+  bool isShowDateTimeRangeSelect = false;
 
   @override
   void initState() {
@@ -53,60 +54,43 @@ class _MyAppState extends State<MyApp> {
               CustomDatePicker(
                 context: context,
                 initialDate: DateTime.now(),
-                lastDate: DateTime(2022),
-                firstDate: DateTime(2019),
+                lastDate: DateTime(2030),
+                firstDate: DateTime(2010),
                 counts: [1, 2, 3, 4, 5, 6, 7],
+                isShowDateTimeRange: isShowDateTimeRangeSelect,
+                onShowDateTimeRangeChange: (value) {
+                  setState(() {
+                    isShowDateTimeRangeSelect = value;
+                  });
+                },
                 onDateChange: (DateTime selectedDate) {
                   setState(() {
                     _selectedValue = selectedDate;
                   });
+                  print('onDateTimeRangeChanged' + selectedDate.toString());
+                },
+                onDateTimeRangeChanged: (value) {
+                  print('onDateTimeRangeChanged' + value.toString());
                 },
                 focusedDay: _focusedDay,
                 onFocusedDateChange: (DateTime date) {
                   _focusedDay = date;
                 },
               ),
-              // DateTimeRangeSelect(
-              //   context: context,
-              //   initialSelectedFirstDate: DateTime.now(),
-              //   initialSelectedLastDate: DateTime.now(),
-              //   focusedMonth: DateTime.now(),
-              //   onFocusedDateChange: (date) {},
-              //   onChanged: (DateTimeRange value) {
-              //     print('DateTimeRange: ' + value.toString());
-              //     dateTimeRange = value;
-              //     setState(() {});
-              //   },
-              //   lastDate: DateTime(2022),
-              //   firstDate: DateTime(2019),
-              // ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  DateTime date =
-                      getDateByWeekNumber(week: 12, year: 2021, start: true);
-                  DateFormat dateFormat = DateFormat("yyyy-MM-dd HH:mm:ss");
-                  print(dateFormat.format(date));
-                  var dayOfWeek = 1;
-                  DateTime now = DateTime.now();
-                  var lastMonday = now
-                      .subtract(Duration(days: now.weekday - dayOfWeek))
-                      .toIso8601String();
-                  print(lastMonday);
-                  print(now.weekday.toString() + 'weekday');
-                  // DateUtils.firstDayOffset(2021, 3, Locale('vi'));
-                  int test1 = Utils.firstDayOffset(2021, 3);
-                  print(test1);
-                  int test2 = Utils.dateDelta(now, DateTime(2021, 4, 1));
-                  print(test2 / 7);
+                  setState(() {
+                    isShowDateTimeRangeSelect = !isShowDateTimeRangeSelect;
+                  });
                 },
                 child: Text('test'),
               ),
               const SizedBox(height: 32),
               Text(
-                'You selected: \n $_selectedValue \n dsadasda: \n $dateTimeRange',
+                'You selected: \n $_selectedValue \n dsadasda: \n $dateTimeRange\n $isShowDateTimeRangeSelect',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 18,
                   color: Colors.red,
                 ),
               ),
@@ -116,4 +100,39 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+
+  // Widget _buildDatePicker() {
+  //   return DatePickerTimeline(
+  //     context: context,
+  //     initialDate: _dateTimeNow,
+  //     firstDate: DateTime(_dateTimeNow.year - 5, 1),
+  //     lastDate: DateTime(_dateTimeNow.year + 5, 12),
+  //     focusedDay: _focusedDay,
+  //     counts: state is AppointmentsCountSuccess ? state.counts : null,
+  //     onDateChange: (DateTime selectedDate) {
+  //       if (!Utils.isSameDay(_selectedDate, selectedDate)) {
+  //         setState(() {
+  //           if (_isExpandedAll) {
+  //             _isExpandedAll = false;
+  //           }
+  //           _selectedDate = selectedDate;
+  //           _appointmentsBloc.add(AppointmentsRefreshed(
+  //               dateFrom: selectedDate, dateTo: selectedDate));
+  //         });
+  //       }
+  //     },
+  //     onFocusedDateChange: (DateTime dateTime) {
+  //       _focusedDay = dateTime;
+  //       if (_timerHandleDatePicker != null) {
+  //         _timerHandleDatePicker?.cancel();
+  //       }
+  //       _timerHandleDatePicker = Timer(
+  //         const Duration(milliseconds: 200),
+  //         () => _appointmentsCountBloc.add(
+  //           AppointmentsCountLoaded(Utils.getMondayOnCurrentWeek(_focusedDay)),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 }

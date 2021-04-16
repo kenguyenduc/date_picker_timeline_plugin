@@ -4,10 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'gestures/tap.dart';
 import 'dart:math' as math;
 
-const Duration _kMonthScrollDuration = Duration(milliseconds: 200);
 const double _kDayPickerRowHeight = 44.0;
-
-const double _horizontalPadding = 8.0;
 const int _kMaxDayPickerRowCount = 6; // A 31 day month that starts on Saturday.
 
 class _DayPickerGridDelegate extends SliverGridDelegate {
@@ -36,7 +33,7 @@ class _DayPickerGridDelegate extends SliverGridDelegate {
 const _DayPickerGridDelegate _kDayPickerGridDelegate = _DayPickerGridDelegate();
 
 class DateTimeRangeSelect extends StatefulWidget {
-  const DateTimeRangeSelect(
+  DateTimeRangeSelect(
       {Key? key,
       required this.context,
       this.initialSelectedFirstDate,
@@ -46,10 +43,28 @@ class DateTimeRangeSelect extends StatefulWidget {
       this.onChanged,
       required this.focusedMonth,
       required this.onFocusedDateChange})
-      : super(key: key);
+      : assert(!lastDate.isBefore(firstDate),
+            'lastDate $lastDate must be on or after firstDate $firstDate.'),
+        assert(
+            initialSelectedFirstDate == null ||
+                !initialSelectedFirstDate.isBefore(firstDate),
+            'initialDate $initialSelectedFirstDate must be on or after firstDate $firstDate.'),
+        assert(
+            initialSelectedFirstDate == null ||
+                !initialSelectedFirstDate.isAfter(lastDate),
+            'initialDate $initialSelectedFirstDate must be on or before lastDate $lastDate.'),
+        assert(
+            initialSelectedLastDate == null ||
+                !initialSelectedLastDate.isBefore(firstDate),
+            'initialDate $initialSelectedLastDate must be on or after firstDate $firstDate.'),
+        assert(
+            initialSelectedLastDate == null ||
+                !initialSelectedLastDate.isAfter(lastDate),
+            'initialDate $initialSelectedLastDate must be on or before lastDate $lastDate.'),
+        super(key: key);
 
   @override
-  _DateTimeRangeSelectState createState() => _DateTimeRangeSelectState();
+  DateTimeRangeSelectState createState() => DateTimeRangeSelectState();
 
   final BuildContext context;
 
@@ -75,7 +90,7 @@ class DateTimeRangeSelect extends StatefulWidget {
   final DateTime lastDate;
 }
 
-class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
+class DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
   DateTime? _selectedFirstDate;
   DateTime? _selectedLastDate;
   late DateTime _focusedMonth;
@@ -87,7 +102,8 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
   @override
   void initState() {
     super.initState();
-    _focusedMonth = widget.focusedMonth;
+    _focusedMonth =
+        DateTime(widget.focusedMonth.year, widget.focusedMonth.month);
     _selectedFirstDate = widget.initialSelectedFirstDate;
     _selectedLastDate = widget.initialSelectedLastDate;
   }
@@ -103,52 +119,42 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 12),
           _buildTagsTime(),
           SizedBox(
             height: 300,
             child: _buildDayPicker(),
           ),
-          Align(
-            alignment: Alignment.center,
-            child: Container(
-              height: 4,
-              width: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                color: Color(0xFFCCCCCC),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
   Widget _buildTagsTime() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextButton(onPressed: _handlePreviousMonth, child: Text('prev')),
-        _buildButtonTagTime(
-          title: 'Hôm nay',
-          value: TagTime.today,
-          onPressed: _handleButtonTodayPressed,
-        ),
-        const SizedBox(width: 12),
-        _buildButtonTagTime(
-          title: 'Tuần này',
-          value: TagTime.thisWeek,
-          onPressed: _handleButtonThisWeekPressed,
-        ),
-        const SizedBox(width: 12),
-        _buildButtonTagTime(
-          title: 'Tháng này',
-          value: TagTime.thisMonth,
-          onPressed: _handleButtonThisMonthPressed,
-        ),
-        TextButton(onPressed: _handleNextMonth, child: Text('next')),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildButtonTagTime(
+            title: 'Hôm nay',
+            value: TagTime.today,
+            onPressed: _handleButtonTodayPressed,
+          ),
+          const SizedBox(width: 12),
+          _buildButtonTagTime(
+            title: 'Tuần này',
+            value: TagTime.thisWeek,
+            onPressed: _handleButtonThisWeekPressed,
+          ),
+          const SizedBox(width: 12),
+          _buildButtonTagTime(
+            title: 'Tháng này',
+            value: TagTime.thisMonth,
+            onPressed: _handleButtonThisMonthPressed,
+          ),
+        ],
+      ),
     );
   }
 
@@ -158,6 +164,7 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
           start: Utils.dateOnly(_selectedFirstDate!),
           end: Utils.dateOnly(_selectedLastDate!)));
     }
+    widget.onFocusedDateChange(Utils.dateOnly(_focusedMonth));
   }
 
   void _handleButtonTodayPressed() {
@@ -227,24 +234,22 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
   }
 
   ///Load page view next month
-  void _handleNextMonth() {
+  void handleNextMonth() {
     if (!_isDisplayingLastMonth) {
       setState(() {
-        _focusedMonth = _focusedMonth.add(Duration(days: _focusedMonth.day));
-        // widget.onFocusedDateChange(Utils.dateOnly(_focusedMonth));
-        // _dropdownValueMonth = '${_focusedMonth.month}, ${_focusedMonth.year}';
+        _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
+        widget.onFocusedDateChange(Utils.dateOnly(_focusedMonth));
       });
     }
   }
 
   ///Load page view previous month
-  void _handlePreviousMonth() {
+  void handlePreviousMonth() {
     if (!_isDisplayingFirstMonth) {
       setState(() {
-        _focusedMonth =
-            _focusedMonth.subtract(Duration(days: _focusedMonth.day));
-        // widget.onFocusedDateChange(Utils.dateOnly(_focusedMonth));
-        // _dropdownValueMonth = '${_focusedMonth.month}, ${_focusedMonth.year}';
+        _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
+
+        widget.onFocusedDateChange(Utils.dateOnly(_focusedMonth));
       });
     }
   }
@@ -415,12 +420,13 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
             behavior: HitTestBehavior.opaque,
             onTap: () {
               DateTime? first, last;
-              // refreshTagTime();
+              _handleRefreshTagTime();
               if (_selectedLastDate != null) {
                 first = dayToBuild;
                 last = null;
               } else {
-                if (_selectedFirstDate != null) {
+                if (_selectedFirstDate != null &&
+                    Utils.isSameMonth(_selectedFirstDate, dayToBuild)) {
                   if (dayToBuild.compareTo(_selectedFirstDate!) <= 0) {
                     first = dayToBuild;
                     last = _selectedFirstDate;
@@ -430,7 +436,7 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
                   }
                 } else {
                   first = dayToBuild;
-                  last = _selectedFirstDate;
+                  last = null;
                 }
               }
               _handleDayChanged([first, last]);
@@ -447,9 +453,9 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
       resizeDuration: null,
       onDismissed: (DismissDirection direction) {
         if (direction == DismissDirection.endToStart) {
-          _handleNextMonth();
+          handleNextMonth();
         } else if (direction == DismissDirection.startToEnd) {
-          _handlePreviousMonth();
+          handlePreviousMonth();
         }
       },
       child: GridView.custom(
@@ -460,6 +466,12 @@ class _DateTimeRangeSelectState extends State<DateTimeRangeSelect> {
             SliverChildListDelegate(labels, addRepaintBoundaries: false),
       ),
     );
+  }
+
+  void _handleRefreshTagTime() {
+    setState(() {
+      _tagTimeSelected = TagTime.none;
+    });
   }
 
   ///Lấy giá trị ngày đã chọn

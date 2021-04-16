@@ -12,7 +12,10 @@ class CustomDatePicker extends StatefulWidget {
     required this.initialDate,
     required this.firstDate,
     required this.lastDate,
+    this.isShowDateTimeRange = false,
+    this.onShowDateTimeRangeChange,
     this.onDateChange,
+    this.onDateTimeRangeChanged,
     required this.onFocusedDateChange,
     required this.focusedDay,
     this.counts,
@@ -26,13 +29,20 @@ class CustomDatePicker extends StatefulWidget {
 
   final BuildContext context;
 
+  ///set trạng thái ban đầu
+  ///chọn range ngày theo tháng OR chọn từng ngày theo tuần
+  final bool isShowDateTimeRange;
+
+  ///Check kiểu calendar thay đổi
+  final ValueChanged<bool>? onShowDateTimeRangeChange;
+
   /// Ngày khởi tạo được chon ban đầu
   final DateTime initialDate;
 
-  /// ngày bắt đầu
+  /// ngày bắt đầu của lich
   final DateTime firstDate;
 
-  /// ngày cuối cùng
+  /// ngày cuối cùng của lich
   final DateTime lastDate;
 
   /// Ngày trong tuần đang được hiển thị
@@ -40,6 +50,9 @@ class CustomDatePicker extends StatefulWidget {
 
   /// Callback function for when a different date is selected
   final DateChangeListener? onDateChange;
+
+  /// Called when the user picks a month.
+  final ValueChanged<DateTimeRange>? onDateTimeRangeChanged;
 
   ///ngày trong tuần hiển thị thay được thay đổi
   final DateChangeListener onFocusedDateChange;
@@ -55,8 +68,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
   static final DateTime _dateTimeNow = DateTime.now();
 
   /// Items dropdown button select month
-  final List<String> _dropdownItemsMonth = <String>[];
-  late String? _dropdownValueMonth;
+  late String? _textFocusedMonth;
 
   ///Ngày được chọn
   late DateTime _selectedDate;
@@ -64,12 +76,16 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
   /// Ngày trong tuần đang được hiển thị
   late DateTime _focusedDay;
 
-  bool isShowDateTimeRangeSelect = false;
+  late bool _isShowDateTimeRange;
+
+  final GlobalKey<DateTimeRangeSelectState> _keyDateTimeRange =
+      GlobalKey<DateTimeRangeSelectState>();
 
   @override
   void initState() {
     super.initState();
-    _loadListMonthSelect();
+    _isShowDateTimeRange = widget.isShowDateTimeRange;
+    _textFocusedMonth = '${_dateTimeNow.month}, ${_dateTimeNow.year}';
     _selectedDate = widget.initialDate;
     _focusedDay = widget.focusedDay;
   }
@@ -79,20 +95,11 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
     super.dispose();
   }
 
-  /// Handle update list item dropdown select month
-  void _loadListMonthSelect() {
-    _dropdownValueMonth = '${_dateTimeNow.month}, ${_dateTimeNow.year}';
-    final int _firstYear = widget.firstDate.year;
-    final int _lastYear = widget.lastDate.year;
-    //Cập nhật tháng những năm trước
-    for (int i = _firstYear; i < _lastYear; i++) {
-      for (int j = 1; j <= 12; j++) {
-        _dropdownItemsMonth.add('$j, $i');
-      }
-    }
-    //Thêm tháng đến tháng hiện tại
-    for (int i = 1; i <= widget.lastDate.month; i++) {
-      _dropdownItemsMonth.add('$i, ${widget.lastDate.year}');
+  @override
+  void didUpdateWidget(covariant CustomDatePicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isShowDateTimeRange != widget.isShowDateTimeRange) {
+      _isShowDateTimeRange = widget.isShowDateTimeRange;
     }
   }
 
@@ -108,106 +115,209 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Visibility(
-                visible: isShowDateTimeRangeSelect,
-                child: IconButton(
-                  onPressed: () {
-                    print('arrow_back_ios');
-                  },
-                  icon: Icon(
-                    Icons.arrow_back_ios,
-                    color: const Color(0xFF303030),
-                    size: 20,
-                  ),
-                ),
-              ),
-              // Spacer(),
-              TextButton(
-                onPressed: () {
-                  ///
-                  ///Todo: scroll show date range picker
-                  ///
-                  setState(() {
-                    isShowDateTimeRangeSelect = !isShowDateTimeRangeSelect;
-                  });
-                },
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tháng $_dropdownValueMonth',
-                      style: TextStyle(
-                        color: Color(0xFF303030),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    isShowDateTimeRangeSelect
-                        ? SizedBox(width: 20)
-                        : Icon(
-                            Icons.keyboard_arrow_down,
-                            color: const Color(0xFF303030),
-                            size: 20,
-                          ),
-                  ],
-                ),
-              ),
-              // Spacer(),
-              Visibility(
-                visible: isShowDateTimeRangeSelect,
-                child: IconButton(
-                  onPressed: () {
-                    print('arrow_forward_ios');
-                  },
-                  icon: Icon(
-                    Icons.arrow_forward_ios,
-                    color: const Color(0xFF303030),
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          _buildHeader(),
+          const SizedBox(height: 10),
           const DashedLineHorizontal(color: Color(0xFFEEEEEE)),
-          !isShowDateTimeRangeSelect
-              ? SizedBox(
-                  height: 80,
-                  child: Stack(
-                    children: <Widget>[
-                      _buildDaysOnWeek(),
-                      Align(
-                          alignment: Alignment.centerRight,
-                          child: _buildButtonNextPage()),
-                      Align(
-                          alignment: Alignment.centerLeft,
-                          child: _buildButtonPreviousPage()),
-                    ],
-                  ),
-                )
-              : DateTimeRangeSelect(
-                  context: context,
-                  initialSelectedFirstDate: DateTime.now(),
-                  initialSelectedLastDate: DateTime.now(),
-                  focusedMonth: DateTime.now(),
-                  onFocusedDateChange: (date) {},
-                  onChanged: (DateTimeRange value) {
-                    print('DateTimeRange: ' + value.toString());
-                    // dateTimeRange = value;
-                    setState(() {});
-                  },
-                  lastDate: DateTime(2022),
-                  firstDate: DateTime(2019),
-                ),
+          if (!_isShowDateTimeRange)
+            _buildDateTimelineSelect()
+          else
+            _buildDateTimeRangeSelect(),
         ],
       ),
     );
   }
 
-  DateTime _fromDropdownValueToDate(String value) {
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Visibility(
+            visible: _isShowDateTimeRange,
+            child: _buildButtonPreviousMonth(),
+          ),
+          _buildTextButtonCurrentMonth(),
+          Visibility(
+            visible: _isShowDateTimeRange,
+            child: _buildButtonNextMonth(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateTimelineSelect() {
+    return SizedBox(
+      height: 80,
+      child: Stack(
+        children: <Widget>[
+          _buildDaysOnWeek(),
+          Align(
+              alignment: Alignment.centerRight, child: _buildButtonNextPage()),
+          Align(
+              alignment: Alignment.centerLeft,
+              child: _buildButtonPreviousPage()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateTimeRangeSelect() {
+    ///
+    ///Todo: scroll show date range picker
+    ///
+    return GestureDetector(
+      // onVerticalDragDown: (details) {
+      //   print('onVerticalDragDown');
+      //   print(details);
+      //   _handleTextCurrentMonthPressed();
+      // },
+      // onVerticalDragStart: (details) {
+      //   print('onVerticalDragStart');
+      //   print(details);
+      //   // _handleTextCurrentMonthPressed();
+      // },
+      // onVerticalDragUpdate: (details) {
+      //   print('onVerticalDragUpdate');
+      //   print(details.primaryDelta);
+      //   if(details.primaryDelta!=null && details.primaryDelta! < 0){
+      //     // _handleTextCurrentMonthPressed();
+      //   }
+      // },
+      onVerticalDragEnd: (details) {
+        print('onVerticalDragEnd');
+        print(details.primaryVelocity);
+        // _handleTextCurrentMonthPressed();
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          DateTimeRangeSelect(
+            key: _keyDateTimeRange,
+            context: context,
+            initialSelectedFirstDate: _focusedDay,
+            initialSelectedLastDate: _focusedDay,
+            focusedMonth: _focusedDay,
+            onFocusedDateChange: (DateTime date) {
+              setState(() {
+                _focusedDay = date;
+                widget.onFocusedDateChange(Utils.dateOnly(_focusedDay));
+                _textFocusedMonth = '${date.month}, ${date.year}';
+              });
+            },
+            onChanged: (DateTimeRange value) {
+              if (widget.onDateTimeRangeChanged != null) {
+                widget.onDateTimeRangeChanged!(value);
+              }
+            },
+            firstDate: widget.firstDate,
+            lastDate: widget.lastDate,
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: Container(
+              height: 4,
+              width: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                color: const Color(0xFFCCCCCC),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  void _handleTextCurrentMonthPressed() {
+    setState(() {
+      _isShowDateTimeRange = !_isShowDateTimeRange;
+      if (widget.onShowDateTimeRangeChange != null) {
+        widget.onShowDateTimeRangeChange!(_isShowDateTimeRange);
+      }
+    });
+  }
+
+  Widget _buildTextButtonCurrentMonth() {
+    return TextButton(
+      onPressed: _handleTextCurrentMonthPressed,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Tháng $_textFocusedMonth',
+            style: const TextStyle(
+              color: Color(0xFF303030),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (_isShowDateTimeRange)
+            const SizedBox(width: 20)
+          else
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: Color(0xFF303030),
+              size: 20,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButtonNextMonth() {
+    return ClipOval(
+      child: SizedBox(
+        height: 40,
+        width: 40,
+        child: Material(
+          color: Colors.transparent,
+          child: IconButton(
+            onPressed: () {
+              if (_keyDateTimeRange.currentState != null) {
+                _keyDateTimeRange.currentState!.handleNextMonth();
+              }
+            },
+            icon: const Icon(
+              Icons.arrow_forward_ios,
+              color: Color(0xFF303030),
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButtonPreviousMonth() {
+    return ClipOval(
+      child: SizedBox(
+        height: 40,
+        width: 40,
+        child: Material(
+          color: Colors.transparent,
+          child: IconButton(
+            onPressed: () {
+              if (_keyDateTimeRange.currentState != null) {
+                _keyDateTimeRange.currentState!.handlePreviousMonth();
+              }
+            },
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              color: Color(0xFF303030),
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// convert 'stringMonth, stringYear' to DateTime
+  DateTime _getValueToDate(String value) {
     final List<String> _monthYear = value.split(', ');
     return DateTime(int.parse(_monthYear[1]), int.parse(_monthYear[0]));
   }
@@ -220,8 +330,8 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
       _widgets.add(DateWidget(
         date: _date,
         count: widget.counts != null ? widget.counts![i] : 0,
-        isCurrentMonth: Utils.isSameMonth(
-            _date, _fromDropdownValueToDate(_dropdownValueMonth!)),
+        isCurrentMonth:
+            Utils.isSameMonth(_date, _getValueToDate(_textFocusedMonth!)),
         onDateSelected: (DateTime selectedDate) {
           if (widget.onDateChange != null) {
             widget.onDateChange!(Utils.dateOnly(selectedDate));
@@ -229,7 +339,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
           setState(() {
             _selectedDate = selectedDate;
             _focusedDay = _selectedDate;
-            _dropdownValueMonth = '${_focusedDay.month}, ${_focusedDay.year}';
+            _textFocusedMonth = '${_focusedDay.month}, ${_focusedDay.year}';
           });
         },
         isSelected: Utils.isSameDay(
@@ -269,9 +379,9 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
         child: Material(
           color: Colors.transparent,
           child: IconButton(
-            icon: Icon(
+            icon: const Icon(
               Icons.keyboard_arrow_right_outlined,
-              color: const Color(0xFF858585),
+              color: Color(0xFF858585),
             ),
             onPressed: () {
               _handleNextWeek();
@@ -290,9 +400,9 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
         child: Material(
           color: Colors.transparent,
           child: IconButton(
-            icon: Icon(
+            icon: const Icon(
               Icons.keyboard_arrow_left_outlined,
-              color: const Color(0xFF858585),
+              color: Color(0xFF858585),
             ),
             onPressed: _handlePreviousWeek,
           ),
@@ -307,7 +417,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
       setState(() {
         _focusedDay = _focusedDay.add(const Duration(days: 7));
         widget.onFocusedDateChange(Utils.dateOnly(_focusedDay));
-        _dropdownValueMonth = '${_focusedDay.month}, ${_focusedDay.year}';
+        _textFocusedMonth = '${_focusedDay.month}, ${_focusedDay.year}';
       });
     }
   }
@@ -318,7 +428,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
       setState(() {
         _focusedDay = _focusedDay.subtract(const Duration(days: 7));
         widget.onFocusedDateChange(Utils.dateOnly(_focusedDay));
-        _dropdownValueMonth = '${_focusedDay.month}, ${_focusedDay.year}';
+        _textFocusedMonth = '${_focusedDay.month}, ${_focusedDay.year}';
       });
     }
   }
